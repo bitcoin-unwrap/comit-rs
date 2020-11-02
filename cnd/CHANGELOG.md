@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [cnd-99.0.3] - 2020-11-02
+
 ### Added
 
 -   `create-transaction` sub-command: Create a signed transactions for redeeming or refunding `hbit` protocols.
@@ -161,7 +163,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Move config files to standard location based on platform (OSX, Windows, Linux).
 -   Align implementation with RFC-002 to use the decision header instead of status codes.
 
-[Unreleased]: https://github.com/comit-network/comit-rs/compare/cnd-0.9.0...HEAD
+[Unreleased]: https://github.com/D4nte/comit-rs/compare/cnd-99.0.3...HEAD
+
+[cnd-99.0.3]: https://github.com/D4nte/comit-rs/compare/cnd-0.9.0...cnd-99.0.3
 
 [cnd-0.9.0]: https://github.com/comit-network/comit-rs/compare/0.8.0...cnd-0.9.0
 

@@ -79,6 +79,11 @@ async fn main() -> Result<()> {
 
     trace::init_tracing(settings.logging.level).expect("initialize tracing");
 
+    let _guard = settings.sentry.as_ref().map(|sentry| {
+        tracing::info!("Initializing sentry with URL {}", sentry.url.as_str());
+        sentry::init(sentry.url.as_str())
+    });
+
     let seed = config::Seed::from_file_or_generate(&settings.data.dir)
         .expect("Could not retrieve/initialize seed")
         .into();
@@ -186,6 +191,16 @@ async fn main() -> Result<()> {
             .context("failed to create transaction")?;
 
             println!("{}", hex);
+        }
+        Command::ArchiveSwap { id } => {
+            #[cfg(not(test))]
+            let db = Database::new(&settings.data.dir.join("database"))?;
+            #[cfg(test)]
+            let db = Database::new_test()?;
+
+            db.archive_swap(&id)
+                .await
+                .context("failed to archive swap")?;
         }
     };
 
