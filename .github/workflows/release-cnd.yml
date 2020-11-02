@@ -88,20 +88,20 @@ jobs:
           echo "::set-output name=process::${{ env.DOCKER_USERNAME != '' && matrix.docker }}"
 
       - name: Login to docker
-        if: steps.check-docker.outputs.process
+        if: steps.check-docker.outputs.process == true
         uses: azure/docker-login@v1
         with:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
       - name: Build cnd docker image as ${{ steps.extract-version.outputs.trimmed }} and latest
-        if: steps.check-docker.outputs.process
+        if: steps.check-docker.outputs.process == true
         run: |
           VERSION="${{ steps.extract-version.outputs.trimmed }}"
           docker build . -t comitnetwork/cnd:$VERSION -t comitnetwork/cnd:latest
 
       - name: Test docker image by starting it and curling the cnd API
-        if: steps.check-docker.outputs.process
+        if: steps.check-docker.outputs.process == true
         run: |
           VERSION="${{ steps.extract-version.outputs.trimmed }}"
           echo "::starting docker-container comitnetwork/cnd:$VERSION"
@@ -111,7 +111,7 @@ jobs:
           docker stop cnd_container
 
       - name: Publish docker image as ${{ steps.extract-version.outputs.trimmed }} and latest
-        if: steps.check-docker.outputs.process
+        if: steps.check-docker.outputs.process == true
         run: |
           VERSION="${{ steps.extract-version.outputs.trimmed }}"
           docker push comitnetwork/cnd:$VERSION
