@@ -14,28 +14,27 @@ use std::str::FromStr;
 
 pub const ATTOS_IN_DAI_EXP: u16 = 18;
 
-/// As per https://github.com/makerdao/developerguides/blob/804bb1f4d1ea737f0287cbf6480a570b888dd547/dai/dai-token/dai-token.md
-/// Dai Version 1.0.8
-static MAINNET_DAI_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
-    "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+/// As per https://etherscan.io/token/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599
+static MAINNET_WBTC_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
+    "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
         .parse()
         .expect("Valid hex")
 });
-/// Dai Version 1.0.8
+/// As per https://kovan.etherscan.io/token/0xa0a5ad2296b38bd3e3eb59aaeaf1589e8d9a29a9
 static KOVAN_DAI_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
-    "0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa"
+    "0xa0a5ad2296b38bd3e3eb59aaeaf1589e8d9a29a9"
         .parse()
         .expect("Valid hex")
 });
-/// Dai Version 1.0.4
-static RINKEBY_DAI_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
-    "0x6A9865aDE2B6207dAAC49f8bCba9705dEB0B0e6D"
+/// As per https://rinkeby.etherscan.io/address/0xeba449b9150f34396d529643263a90d495ae563c
+static RINKEBY_WBTC_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
+    "0xEBa449b9150F34396D529643263A90D495Ae563c"
         .parse()
         .expect("Valid hex")
 });
-/// Dai Version 1.0.4
-static ROPSTEN_DAI_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
-    "0x31F42841c2db5173425b5223809CF3A38FEde360"
+/// As per https://ropsten.etherscan.io/address/0x65058d7081fcdc3cd8727dbb7f8f9d52cefdd291
+static ROPSTEN_WBTC_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
+    "0x65058d7081FCdC3cd8727dbb7F8F9D52CefDd291"
         .parse()
         .expect("Valid hex")
 });
@@ -147,15 +146,15 @@ impl Amount {
 }
 
 pub(super) fn is_mainnet_contract_address(contract_address: Address) -> bool {
-    contract_address == *MAINNET_DAI_CONTRACT_ADDRESS
+    contract_address == *MAINNET_WBTC_CONTRACT_ADDRESS
 }
 
 pub(super) fn is_ropsten_contract_address(contract_address: Address) -> bool {
-    contract_address == *ROPSTEN_DAI_CONTRACT_ADDRESS
+    contract_address == *ROPSTEN_WBTC_CONTRACT_ADDRESS
 }
 
 pub(super) fn is_rinkeby_contract_address(contract_address: Address) -> bool {
-    contract_address == *RINKEBY_DAI_CONTRACT_ADDRESS
+    contract_address == *RINKEBY_WBTC_CONTRACT_ADDRESS
 }
 
 pub(super) fn is_kovan_contract_address(contract_address: Address) -> bool {
@@ -165,9 +164,9 @@ pub(super) fn is_kovan_contract_address(contract_address: Address) -> bool {
 pub(super) fn token_contract_address(chain: ethereum::Chain) -> Address {
     use ethereum::Chain::*;
     match chain {
-        Mainnet => *MAINNET_DAI_CONTRACT_ADDRESS,
-        Ropsten => *ROPSTEN_DAI_CONTRACT_ADDRESS,
-        Rinkeby => *RINKEBY_DAI_CONTRACT_ADDRESS,
+        Mainnet => *MAINNET_WBTC_CONTRACT_ADDRESS,
+        Ropsten => *ROPSTEN_WBTC_CONTRACT_ADDRESS,
+        Rinkeby => *RINKEBY_WBTC_CONTRACT_ADDRESS,
         Kovan => *KOVAN_DAI_CONTRACT_ADDRESS,
         Local {
             dai_contract_address,

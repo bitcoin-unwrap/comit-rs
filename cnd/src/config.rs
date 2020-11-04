@@ -25,23 +25,23 @@ static LND_URL: Lazy<Url> = Lazy::new(|| parse_unchecked("https://localhost:8080
 
 static WEB3_URL: Lazy<Url> = Lazy::new(|| parse_unchecked("http://localhost:8545"));
 
-/// The DAI token contract on Ethereum mainnet.
+/// The WBTC token contract on Ethereum mainnet.
 ///
-/// Source: https://changelog.makerdao.com/
-static DAI_MAINNET: Lazy<ethereum::Address> =
-    Lazy::new(|| parse_unchecked("0x6B175474E89094C44Da98b954EedeAC495271d0F"));
+/// Source: https://etherscan.io/token/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599
+static WBTC_MAINNET: Lazy<ethereum::Address> =
+    Lazy::new(|| parse_unchecked("0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"));
 
-/// The DAI token contract on the Ethereum testnet "kovan".
+/// The WBTC token contract on the Ethereum testnet "kovan".
 ///
-/// Source: https://changelog.makerdao.com/
-static DAI_KOVAN: Lazy<ethereum::Address> =
-    Lazy::new(|| parse_unchecked("0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa"));
+/// Source: https://kovan.etherscan.io/token/0xa0a5ad2296b38bd3e3eb59aaeaf1589e8d9a29a9
+static WBTC_KOVAN: Lazy<ethereum::Address> =
+    Lazy::new(|| parse_unchecked("0xa0a5ad2296b38bd3e3eb59aaeaf1589e8d9a29a9"));
 
-/// The DAI token contract on the Ethereum testnet "ropsten".
+/// The WBTC token contract on the Ethereum testnet "ropsten".
 ///
-/// Source: https://changelog.makerdao.com/
-static DAI_ROPSTEN: Lazy<ethereum::Address> =
-    Lazy::new(|| parse_unchecked("0x31F42841c2db5173425b5223809CF3A38FEde360"));
+/// Source: https://ropsten.etherscan.io/address/0x65058d7081fcdc3cd8727dbb7f8f9d52cefdd291
+static WBTC_ROPSTEN: Lazy<ethereum::Address> =
+    Lazy::new(|| parse_unchecked("0x65058d7081FCdC3cd8727dbb7F8F9D52CefDd291"));
 
 static COMIT_SOCKET: Lazy<Multiaddr> = Lazy::new(|| parse_unchecked("/ip4/0.0.0.0/tcp/9939"));
 
@@ -190,9 +190,9 @@ impl Tokens {
 
 fn dai_address_from_chain_id(id: ChainId) -> Result<ethereum::Address> {
     Ok(match id {
-        ChainId::MAINNET => *DAI_MAINNET,
-        ChainId::ROPSTEN => *DAI_ROPSTEN,
-        ChainId::KOVAN => *DAI_KOVAN,
+        ChainId::MAINNET => *WBTC_MAINNET,
+        ChainId::ROPSTEN => *WBTC_ROPSTEN,
+        ChainId::KOVAN => *WBTC_KOVAN,
         id => anyhow::bail!(
             "unable to infer DAI token contract from chain-ID {}",
             u32::from(id)
