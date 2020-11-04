@@ -248,7 +248,7 @@ mod test {
     use super::*;
     use crate::{
         bitcoin::amount::btc, config, config::BitcoinFees, ethereum::dai::dai,
-        order::btc_dai_order, rate::rate, MidMarketRate, StaticStub,
+        order::btc_dai_order, rate::rate, StaticStub,
     };
     use num::BigUint;
     use proptest::prelude::*;
@@ -463,7 +463,7 @@ mod test {
         );
 
         assert_eq!(
-            spread.apply(rate, Position::Sell).unwrap().integer(),
+            spread.apply(rate, Position::Sell).unwrap().significand(),
             BigUint::from(103000000000000 as u64)
         );
 
@@ -477,7 +477,7 @@ mod test {
         assert_eq!(dai::Amount::from(order.quote()), dai(10_300.0));
 
         assert_eq!(
-            spread.apply(rate, Position::Buy).unwrap().integer(),
+            spread.apply(rate, Position::Buy).unwrap().significand(),
             BigUint::from(97000000000000 as u64)
         );
 
@@ -683,9 +683,9 @@ mod test {
     fn sell_order_is_as_good_as_market_rate() {
         let order = btc_dai_order(Position::Sell, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(1.0).unwrap());
+        let rate = Rate::try_from(1.0).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(is_profitable)
     }
 
@@ -693,9 +693,9 @@ mod test {
     fn sell_order_is_better_than_market_rate() {
         let order = btc_dai_order(Position::Sell, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(0.9).unwrap());
+        let rate = Rate::try_from(0.9).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(is_profitable)
     }
 
@@ -703,9 +703,9 @@ mod test {
     fn sell_order_is_worse_than_market_rate() {
         let order = btc_dai_order(Position::Sell, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(1.1).unwrap());
+        let rate = Rate::try_from(1.1).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(!is_profitable)
     }
 
@@ -713,9 +713,9 @@ mod test {
     fn buy_order_is_as_good_as_market_rate() {
         let order = btc_dai_order(Position::Buy, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(1.0).unwrap());
+        let rate = Rate::try_from(1.0).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(is_profitable)
     }
 
@@ -723,9 +723,9 @@ mod test {
     fn buy_order_is_better_than_market_rate() {
         let order = btc_dai_order(Position::Buy, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(1.1).unwrap());
+        let rate = Rate::try_from(1.1).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(is_profitable)
     }
 
@@ -733,9 +733,9 @@ mod test {
     fn buy_order_is_worse_than_market_rate() {
         let order = btc_dai_order(Position::Buy, btc(1.0), rate(1.0));
 
-        let rate = MidMarketRate::new(Rate::try_from(0.9).unwrap());
+        let rate = Rate::try_from(0.9).unwrap();
 
-        let is_profitable = is_as_profitable_as(&order, rate.into());
+        let is_profitable = is_as_profitable_as(&order, rate);
         assert!(!is_profitable)
     }
 }

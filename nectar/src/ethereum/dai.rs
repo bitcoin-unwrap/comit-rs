@@ -117,12 +117,13 @@ impl Amount {
     /// conversion rate. Truncation may be done during the conversion to
     /// allow a result in satoshi
     pub fn worth_in(&self, btc_to_dai: Rate) -> anyhow::Result<bitcoin::Amount> {
-        if btc_to_dai.integer().is_zero() {
+        // TODO: Use Price and NonZeroU64 so it cannot be zero
+        if btc_to_dai.significand().is_zero() {
             anyhow::bail!("Cannot use a nil rate.")
         }
 
         // Get the integer part of the rate
-        let uint_rate = btc_to_dai.integer();
+        let uint_rate = btc_to_dai.significand();
 
         // Apply the rate
         let (worth, _remainder) = self.as_atto().div_rem(&uint_rate);
