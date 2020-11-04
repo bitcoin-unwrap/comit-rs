@@ -25,8 +25,7 @@ mod proptest;
 #[cfg(test)]
 mod spectral_ext;
 #[macro_use]
-mod with_swap_types;
-mod actions;
+mod within_swap_context;
 mod bitcoin_fees;
 mod cli;
 mod config;
@@ -40,7 +39,6 @@ mod local_swap_id;
 mod republish;
 mod respawn;
 mod spawn;
-mod state;
 mod storage;
 mod trace;
 
@@ -85,7 +83,7 @@ use crate::{
 };
 use ::bitcoin::secp256k1::{All, Secp256k1};
 use anyhow::{Context, Result};
-use comit::{ledger, LockProtocol, Never, Role, Secret, Side, Timestamp};
+use comit::{ledger, LockProtocol, Never, Role, Secret, Side};
 use conquer_once::Lazy;
 use futures::future;
 use rand::rngs::OsRng;
@@ -301,6 +299,7 @@ async fn execute_subcommand(
             secret,
             outpoint,
             address,
+            fund_amount,
         }) => {
             let swap_context: SwapContext = storage
                 .load(swap_id)
@@ -346,24 +345,24 @@ async fn execute_subcommand(
                 }
             };
 
-            let transaction = hbit_params.shared.build_redeem_action(
-                &*SECP,
-                hbit_params.shared.asset,
-                outpoint,
-                hbit_params.transient_sk,
-                address,
-                secret,
-                bitcoin_fees.get_per_vbyte_rate().await?,
-            )?;
+            let transaction = hbit_params
+                .build_spend_action(
+                    fund_amount.unwrap_or(hbit_params.shared.asset),
+                    outpoint,
+                    address,
+                    |htlc, secret_key| {
+                        htlc.unlock_with_secret(&*SECP, secret_key, secret.into_raw_secret())
+                    },
+                )
+                .sign(&*SECP, bitcoin_fees.get_per_vbyte_rate().await?)?;
 
-            Ok(hex::encode(::bitcoin::consensus::serialize(
-                &transaction.transaction,
-            )))
+            Ok(::bitcoin::consensus::encode::serialize_hex(&transaction))
         }
         Command::CreateTransaction(CreateTransaction::Refund {
             swap_id,
             outpoint,
             address,
+            fund_amount,
         }) => {
             let swap_context: SwapContext = storage
                 .load(swap_id)
@@ -396,18 +395,16 @@ async fn execute_subcommand(
                 }
             };
 
-            let transaction = hbit_params.shared.build_refund_action(
-                &*SECP,
-                hbit_params.shared.asset,
-                outpoint,
-                hbit_params.transient_sk,
-                address,
-                bitcoin_fees.get_per_vbyte_rate().await?,
-            )?;
+            let transaction = hbit_params
+                .build_spend_action(
+                    fund_amount.unwrap_or(hbit_params.shared.asset),
+                    outpoint,
+                    address,
+                    |htlc, secret_key| htlc.unlock_after_timeout(&*SECP, secret_key),
+                )
+                .sign(&*SECP, bitcoin_fees.get_per_vbyte_rate().await?)?;
 
-            Ok(hex::encode(::bitcoin::consensus::serialize(
-                &transaction.transaction,
-            )))
+            Ok(::bitcoin::consensus::encode::serialize_hex(&transaction))
         }
     }
 }
