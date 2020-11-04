@@ -1,6 +1,6 @@
 use crate::{
     bitcoin,
-    ethereum::{self, dai},
+    ethereum::{self, wbtc},
     order::Symbol,
     Rate,
 };
@@ -12,7 +12,7 @@ pub mod strategy;
 #[derive(Debug)]
 pub struct Maker {
     btc_balance: Option<bitcoin::Amount>,
-    dai_balance: Option<dai::Amount>,
+    dai_balance: Option<wbtc::Amount>,
     // TODO: Replace with a Price.
     fixed_rate: Rate,
     pub strategy: strategy::AllIn,
@@ -26,7 +26,7 @@ impl Maker {
     #![allow(clippy::too_many_arguments)]
     pub fn new(
         btc_balance: bitcoin::Amount,
-        dai_balance: dai::Amount,
+        dai_balance: wbtc::Amount,
         fixed_rate: Rate,
         strategy: strategy::AllIn,
         bitcoin_network: ledger::Bitcoin,
@@ -71,10 +71,10 @@ impl Maker {
 
     pub fn update_dai_balance(
         &mut self,
-        balance: dai::Amount,
+        balance: wbtc::Amount,
     ) -> anyhow::Result<Option<PublishOrders>> {
         // if we had a balance and the balance did not change => no new orders
-        if let Some(previous_balance) = self.dai_balance.clone() {
+        if let Some(previous_balance) = self.dai_balance {
             if previous_balance == balance {
                 return Ok(None);
             }
@@ -164,18 +164,18 @@ mod tests {
     use crate::{
         bitcoin,
         bitcoin::amount::{btc, some_btc},
-        ethereum::dai::{dai, some_dai},
+        ethereum::wbtc::{dai, some_dai},
         order::btc_dai_order,
         rate::rate,
         Rate, Spread, StaticStub,
     };
-    use std::convert::TryInto;
+    use std::convert::{TryFrom, TryInto};
 
     impl StaticStub for Maker {
         fn static_stub() -> Self {
             Self {
                 btc_balance: Some(bitcoin::Amount::default()),
-                dai_balance: Some(dai::Amount::default()),
+                dai_balance: Some(wbtc::Amount::default()),
                 strategy: strategy::AllIn::static_stub(),
                 fixed_rate: Rate::static_stub(),
                 bitcoin_network: ledger::Bitcoin::Mainnet,
@@ -265,7 +265,7 @@ mod tests {
         let new_balance = dai(0.5);
 
         maker
-            .update_dai_balance(new_balance.clone())
+            .update_dai_balance(new_balance)
             .unwrap()
             .expect("to publish new orders if dai balance changes");
 
@@ -315,7 +315,10 @@ mod tests {
         };
 
         let new_buy_order = maker.new_buy_order().unwrap();
-        assert_eq!(dai::Amount::from(new_buy_order.quote()), dai(1.0));
+        assert_eq!(
+            wbtc::Amount::try_from(new_buy_order.quote()).unwrap(),
+            dai(1.0)
+        );
 
         let result = maker.process_taken_order(new_buy_order).unwrap();
 
@@ -342,7 +345,11 @@ mod tests {
 
         let new_buy_order = maker.new_buy_order().unwrap();
         assert_eq!(new_buy_order.quantity.to_inner(), btc(0.002));
-        assert_eq!(dai::Amount::from(new_buy_order.quote()), dai(18.0));
+
+        assert_eq!(
+            wbtc::Amount::try_from(new_buy_order.quote()).unwrap(),
+            dai(18.0)
+        );
     }
 
     #[test]
@@ -365,6 +372,9 @@ mod tests {
 
         let new_buy_order = maker.new_buy_order().unwrap();
         assert_eq!(new_buy_order.quantity.to_inner(), btc(0.002));
-        assert_eq!(dai::Amount::from(new_buy_order.quote()), dai(20.0));
+        assert_eq!(
+            wbtc::Amount::try_from(new_buy_order.quote()).unwrap(),
+            dai(20.0)
+        );
     }
 }

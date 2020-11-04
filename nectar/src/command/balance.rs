@@ -21,7 +21,7 @@ pub async fn balance(
         .unwrap_or_else(|e| format!("Problem encountered: {:#}", e));
 
     Ok(format!(
-        "Bitcoin: {}\nDai: {}\nEther: {}",
+        "Bitcoin: {}\nWrapped-Bitcoin: {}\nEther: {}",
         bitcoin_balance, dai_balance, ether_balance
     ))
 }

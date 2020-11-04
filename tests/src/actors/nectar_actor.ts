@@ -66,11 +66,11 @@ export default class NectarActor
                 expectedBalance.toString() + " ETH"
             );
         }
-        if (expectedDiff.dai) {
+        if (expectedDiff.wbtc) {
             const expectedBalance =
-                this.startingBalances.dai + expectedDiff.dai;
+                this.startingBalances.wbtc + expectedDiff.wbtc;
 
-            expect(newBalances.dai.toString() + " DAI").toEqual(
+            expect(newBalances.wbtc.toString() + " DAI").toEqual(
                 expectedBalance.toString() + " DAI"
             );
         }

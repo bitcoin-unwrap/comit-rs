@@ -8,7 +8,7 @@ import { Currency, OrderEntity, Position } from "../src/cnd_client/payload";
 test(
     "given_i_make_an_order_when_i_restart_my_node_it_should_still_be_there",
     startAlice(async (alice) => {
-        const href = await alice.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        const href = await alice.makeBtcDaiOrder(Position.Sell, "0.2", "1");
 
         await alice.restart();
 
@@ -22,8 +22,8 @@ test(
             },
             price: {
                 currency: Currency.DAI,
-                value: "9000000000000000000000",
-                decimals: 18,
+                value: "20000000",
+                decimals: 8,
             },
         });
     })
@@ -32,7 +32,7 @@ test(
 test(
     "given_alice_makes_an_order_when_listing_all_orders_then_it_is_returned",
     startAlice(async (alice) => {
-        await alice.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Sell, "0.2", "1");
 
         const orders = await alice.listOpenOrders();
 
@@ -46,8 +46,8 @@ test(
             },
             price: {
                 currency: Currency.DAI,
-                value: "9000000000000000000000",
-                decimals: 18,
+                value: "20000000",
+                decimals: 8,
             },
             state: {
                 open: "20000000",
@@ -59,7 +59,7 @@ test(
 test(
     "given_an_order_when_cancelled_state_changes_to_cancelled",
     startAlice(async (alice) => {
-        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
+        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
 
         const order = await alice.fetchOrder(href);
 
@@ -83,7 +83,7 @@ test(
 test(
     "given_an_order_when_cancelled_then_it_is_no_longer_returned_in_open_orders",
     startAlice(async (alice) => {
-        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
+        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
 
         const order = await alice.fetchOrder(href);
         await alice.executeSirenAction(order, "cancel");
@@ -97,7 +97,7 @@ test(
 test(
     "given_an_order_when_cnd_is_restarted_then_the_order_is_republished_to_the_market",
     startAlice(async (alice) => {
-        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
         const btcDaiMarket1 = await alice.getBtcDaiMarket();
         expect(btcDaiMarket1.entities).toHaveLength(1);
 

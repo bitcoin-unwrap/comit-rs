@@ -9,12 +9,8 @@ import { Problem } from "../src/axios_rfc7807_middleware";
 test(
     "given_alice_makes_an_order_when_fully_matched_against_bobs_order_then_settling_says_quantity",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        const aliceHref = await alice.makeBtcDaiOrder(
-            Position.Buy,
-            "0.2",
-            "9000"
-        );
-        const bobHref = await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        const aliceHref = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
+        const bobHref = await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1");
 
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 
@@ -40,8 +36,8 @@ test(
 test(
     "given_a_settling_order_when_open_orders_are_listed_is_still_returned_but_cannot_be_cancelled",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
+        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1");
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 
         const orders = await alice.listOpenOrders();
@@ -54,8 +50,8 @@ test(
 test(
     "given_a_settling_order_when_trying_to_cancel_then_fails",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
+        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1");
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 
         const order = await alice.fetchOrder(href);
@@ -76,7 +72,7 @@ test(
     "given_an_order_when_cancelled_then_it_is_taken_from_the_market",
     startConnectedAliceAndBob(async ([alice, bob]) => {
         // make an order and wait until Bob sees it
-        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
+        const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
         await bob.pollCndUntil<MarketEntity>(
             "/markets/BTC-DAI",
             (market) => market.entities.length > 0
@@ -97,8 +93,8 @@ test(
 test(
     "given_an_order_when_it_fully_matches_and_swap_is_setup_then_order_is_removed_from_the_market",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
+        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1");
 
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 

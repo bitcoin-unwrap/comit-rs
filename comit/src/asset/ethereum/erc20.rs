@@ -57,7 +57,7 @@ impl Mul<Price<asset::Bitcoin, Erc20Quantity>> for Quantity<asset::Bitcoin> {
         let wei_per_sat = rhs.wei_per_sat().0;
         let sat = self.sats();
 
-        let value = Erc20Quantity(wei_per_sat * sat);
+        let value = Erc20Quantity(wei_per_sat * sat / 10_000_000_000u64);
 
         debug_assert!(value <= Erc20Quantity::max_value());
 

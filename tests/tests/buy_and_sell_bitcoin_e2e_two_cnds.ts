@@ -9,8 +9,8 @@ import { Position } from "../src/cnd_client/payload";
 it(
     "alice-buys-bob-sells-bitcoin",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1.05");
+        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1.05");
 
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 
@@ -36,8 +36,8 @@ it(
 it(
     "alice-sells-bob-buys-bitcoin",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        await alice.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
+        await alice.makeBtcDaiOrder(Position.Sell, "0.2", "1.05");
+        await bob.makeBtcDaiOrder(Position.Buy, "0.2", "1.05");
 
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 

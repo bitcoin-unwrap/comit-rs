@@ -1,7 +1,7 @@
 use crate::{
     bitcoin,
     command::{into_history_trade, FinishedSwap},
-    ethereum::{self, dai},
+    ethereum::{self, wbtc},
     history::History,
     maker::{PublishOrders, TakeRequestDecision},
     network::{self, ActivePeer, SetupSwapContext, Swarm},
@@ -56,7 +56,7 @@ impl EventLoop {
         mut self,
         mut finished_swap_receiver: Receiver<FinishedSwap>,
         mut btc_balance_update_receiver: Receiver<Result<bitcoin::Amount>>,
-        mut dai_balance_update_receiver: Receiver<Result<dai::Amount>>,
+        mut dai_balance_update_receiver: Receiver<Result<wbtc::Amount>>,
     ) -> anyhow::Result<()> {
         loop {
             futures::select! {
@@ -116,7 +116,7 @@ impl EventLoop {
         Ok(())
     }
 
-    fn handle_dai_balance_update(&mut self, new_dai_balance: dai::Amount) -> Result<()> {
+    fn handle_dai_balance_update(&mut self, new_dai_balance: wbtc::Amount) -> Result<()> {
         if let Some(PublishOrders {
             new_sell_order,
             new_buy_order,
@@ -155,7 +155,7 @@ impl EventLoop {
             .await
             .context("Unable to delete swap from db")?;
 
-        self.maker.strategy.swap_finished(finished_swap.swap);
+        self.maker.strategy.swap_finished(finished_swap.swap)?;
 
         peer_db_res
     }

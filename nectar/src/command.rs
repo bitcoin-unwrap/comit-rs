@@ -13,7 +13,7 @@ mod withdraw;
 use crate::{
     bitcoin,
     config::{File, Settings},
-    ethereum::{self, dai, ether},
+    ethereum::{self, ether, wbtc},
     history,
     network::ActivePeer,
     swap::SwapKind,
@@ -96,7 +96,7 @@ pub enum Withdraw {
     },
     Dai {
         #[structopt(parse(try_from_str = parse_dai))]
-        amount: dai::Amount,
+        amount: wbtc::Amount,
         to_address: ethereum::Address,
     },
     Eth {
@@ -175,11 +175,11 @@ fn parse_bitcoin(str: &str) -> anyhow::Result<bitcoin::Amount> {
     Ok(amount)
 }
 
-fn parse_dai(str: &str) -> anyhow::Result<dai::Amount> {
+fn parse_dai(str: &str) -> anyhow::Result<wbtc::Amount> {
     // TODO: In addition to providing an interface to withdraw attodai, we could use
     // string instead of float here
     let dai = f64::from_str(str)?;
-    dai::Amount::from_dai_trunc(dai)
+    wbtc::Amount::from_wbtc(dai)
 }
 
 fn parse_ether(str: &str) -> anyhow::Result<ether::Amount> {

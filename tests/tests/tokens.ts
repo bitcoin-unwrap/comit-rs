@@ -13,7 +13,7 @@ test(
         expect(tokens).toContainEqual({
             symbol: "DAI",
             address: "0x0000000000000000000000000000000000000000",
-            decimals: 18,
+            decimals: 8,
         });
     })
 );

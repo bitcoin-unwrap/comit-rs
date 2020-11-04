@@ -99,11 +99,9 @@ export class CndActor
         price: string
     ): Promise<string> {
         const sats = BigInt(parseFixed(quantity, 8).toString());
-        const weiPerBtc = BigInt(parseFixed(price, 18).toString());
+        const tenNanoSatsPerSat = BigInt(parseFixed(price, 10).toString());
 
-        const satsPerBtc = 100000000n;
-        const weiPerSat = weiPerBtc / satsPerBtc;
-        const dai = sats * weiPerSat;
+        const wsats = (sats * tenNanoSatsPerSat) / 10_000_000_000n;
 
         switch (position) {
             case Position.Buy: {
@@ -111,7 +109,7 @@ export class CndActor
                     case "Alice": {
                         this.alphaBalance = await Erc20BalanceAsserter.newInstance(
                             this.wallets.ethereum,
-                            dai,
+                            wsats,
                             global.tokenContract
                         );
                         this.betaBalance = await OnChainBitcoinBalanceAsserter.newInstance(
@@ -127,7 +125,7 @@ export class CndActor
                         );
                         this.betaBalance = await Erc20BalanceAsserter.newInstance(
                             this.wallets.ethereum,
-                            dai,
+                            wsats,
                             global.tokenContract
                         );
                         break;
@@ -144,7 +142,7 @@ export class CndActor
                         );
                         this.betaBalance = await Erc20BalanceAsserter.newInstance(
                             this.wallets.ethereum,
-                            dai,
+                            wsats,
                             global.tokenContract
                         );
                         break;
@@ -152,7 +150,7 @@ export class CndActor
                     case "Bob": {
                         this.alphaBalance = await Erc20BalanceAsserter.newInstance(
                             this.wallets.ethereum,
-                            dai,
+                            wsats,
                             global.tokenContract
                         );
                         this.betaBalance = await OnChainBitcoinBalanceAsserter.newInstance(
@@ -169,7 +167,7 @@ export class CndActor
         this.mostRecentOrderHref = await this.cnd.createBtcDaiOrder({
             position,
             quantity: sats,
-            price: weiPerSat,
+            price: tenNanoSatsPerSat,
             swap: {
                 role: this.role,
                 bitcoin_address: await this.wallets.bitcoin.getAddress(),

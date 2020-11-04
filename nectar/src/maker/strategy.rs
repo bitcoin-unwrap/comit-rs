@@ -2,7 +2,7 @@ use crate::{
     bitcoin,
     bitcoin::Fee,
     config,
-    ethereum::dai,
+    ethereum::wbtc,
     maker::TakeRequestDecision,
     order::{BtcDaiOrderForm, Symbol},
     swap::SwapKind,
@@ -10,7 +10,10 @@ use crate::{
 };
 use anyhow::anyhow;
 use comit::{BtcDaiOrder, Position, Quantity};
-use std::cmp::min;
+use std::{
+    cmp::min,
+    convert::{TryFrom, TryInto},
+};
 
 /// Create orders with the full balance, capped by a configuration setting.
 /// A spread is applied on the passed mid-market rate
@@ -18,7 +21,7 @@ use std::cmp::min;
 pub struct AllIn {
     bitcoin_fee: Fee,
     btc_reserved_funds: bitcoin::Amount,
-    dai_reserved_funds: dai::Amount,
+    dai_reserved_funds: wbtc::Amount,
     max_buy_quantity: Option<bitcoin::Amount>,
     max_sell_quantity: Option<bitcoin::Amount>,
     spread: Spread,
@@ -47,7 +50,7 @@ impl AllIn {
 // Methods that are likely to be in the `Strategy` trait
 impl AllIn {
     /// Inform the strategy that a hbit_herc20 swap execution was resumed
-    pub fn hbit_herc20_swap_resumed(&mut self, fund_amount: dai::Amount) {
+    pub fn hbit_herc20_swap_resumed(&mut self, fund_amount: wbtc::Amount) {
         self.dai_reserved_funds += fund_amount;
     }
 
@@ -118,7 +121,7 @@ impl AllIn {
     /// decide the price.
     pub fn new_buy(
         &self,
-        quote_balance: dai::Amount,
+        quote_balance: wbtc::Amount,
         mid_market_rate: Rate,
     ) -> Result<BtcDaiOrderForm> {
         if quote_balance <= self.dai_reserved_funds {
@@ -130,7 +133,7 @@ impl AllIn {
         }
 
         let rate = self.spread.apply(mid_market_rate, Position::Buy)?;
-        let max_quote = quote_balance - self.dai_reserved_funds.clone();
+        let max_quote = quote_balance - self.dai_reserved_funds;
         let max_quote_worth_in_base = max_quote.worth_in(rate)?;
 
         let base_amount = match self.max_buy_quantity {
@@ -156,7 +159,7 @@ impl AllIn {
         &mut self,
         order: BtcDaiOrder,
         current_mid_market_rate: Rate,
-        dai_balance: &dai::Amount,
+        dai_balance: &wbtc::Amount,
         btc_balance: &bitcoin::Amount,
     ) -> anyhow::Result<TakeRequestDecision> {
         let current_profitable_rate = self.spread.apply(current_mid_market_rate, order.position)?;
@@ -168,7 +171,7 @@ impl AllIn {
         match order.position {
             Position::Buy => {
                 let updated_dai_reserved_funds =
-                    self.dai_reserved_funds.clone() + dai::Amount::from(order.quote());
+                    self.dai_reserved_funds + wbtc::Amount::try_from(order.quote())?;
                 if updated_dai_reserved_funds > *dai_balance {
                     // TODO: Daniel - should this be sent to Sentry as well?
                     return Ok(TakeRequestDecision::InsufficientFunds);
@@ -193,16 +196,18 @@ impl AllIn {
     }
 
     /// Process a finished swap.
-    pub fn swap_finished(&mut self, swap: SwapKind) {
+    pub fn swap_finished(&mut self, swap: SwapKind) -> anyhow::Result<()> {
         match swap {
             SwapKind::Herc20Hbit(swap) => {
                 self.btc_reserved_funds -=
                     swap.hbit_params.shared.asset + self.bitcoin_fee.max_tx_fee();
             }
             SwapKind::HbitHerc20(swap) => {
-                self.dai_reserved_funds -= swap.herc20_params.asset.into();
+                self.dai_reserved_funds -= swap.herc20_params.asset.try_into()?;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -247,12 +252,11 @@ pub struct BalanceNotAvailable(Symbol);
 mod test {
     use super::*;
     use crate::{
-        bitcoin::amount::btc, config, config::BitcoinFees, ethereum::dai::dai,
+        bitcoin::amount::btc, config, config::BitcoinFees, ethereum::wbtc::dai,
         order::btc_dai_order, rate::rate, StaticStub,
     };
-    use num::BigUint;
     use proptest::prelude::*;
-    use std::{convert::TryFrom, str::FromStr};
+    use std::convert::TryFrom;
 
     impl StaticStub for AllIn {
         fn static_stub() -> Self {
@@ -310,7 +314,7 @@ mod test {
 
         let order = strategy.new_buy(dai(10.0), rate).unwrap();
 
-        assert_eq!(dai::Amount::from(order.quote()), dai(10.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(10.0));
     }
 
     #[test]
@@ -329,7 +333,7 @@ mod test {
 
         let order = strategy.new_buy(dai(10.0), rate).unwrap();
 
-        assert_eq!(dai::Amount::from(order.quote()), dai(8.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(8.0));
     }
 
     #[test]
@@ -349,7 +353,7 @@ mod test {
 
         let order = strategy.new_buy(dai(10.0), rate).unwrap();
 
-        assert_eq!(dai::Amount::from(order.quote()), dai(2.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(2.0));
     }
 
     #[test]
@@ -429,25 +433,28 @@ mod test {
         let order = strategy.new_sell(btc(1050.0), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(1000.0));
-        assert_eq!(dai::Amount::from(order.quote()), dai(100.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(100.0));
 
         let rate = Rate::try_from(10.0).unwrap();
         let order = strategy.new_sell(btc(1050.0), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(1000.0));
-        assert_eq!(dai::Amount::from(order.quote()), dai(10_000.0));
+        assert_eq!(
+            wbtc::Amount::try_from(order.quote()).unwrap(),
+            dai(10_000.0)
+        );
 
         let rate = Rate::try_from(0.1).unwrap();
         let order = strategy.new_buy(dai(1050.0), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(10_000.0));
-        assert_eq!(dai::Amount::from(order.quote()), dai(1000.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(1000.0));
 
         let rate = Rate::try_from(10.0).unwrap();
         let order = strategy.new_buy(dai(1050.0), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(100.0));
-        assert_eq!(dai::Amount::from(order.quote()), dai(1000.0));
+        assert_eq!(wbtc::Amount::try_from(order.quote()).unwrap(), dai(1000.0));
     }
 
     #[test]
@@ -464,7 +471,7 @@ mod test {
 
         assert_eq!(
             spread.apply(rate, Position::Sell).unwrap().significand(),
-            BigUint::from(103000000000000 as u64)
+            103_000_000_000_000u64
         );
 
         // Resuming a swap should take some reserve for the swap amount and fee.
@@ -474,17 +481,23 @@ mod test {
         let order = strategy.new_sell(btc(1.5), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(1.0));
-        assert_eq!(dai::Amount::from(order.quote()), dai(10_300.0));
+        assert_eq!(
+            wbtc::Amount::try_from(order.quote()).unwrap(),
+            dai(10_300.0)
+        );
 
         assert_eq!(
             spread.apply(rate, Position::Buy).unwrap().significand(),
-            BigUint::from(97000000000000 as u64)
+            97000000000000u64
         );
 
         let order = strategy.new_buy(dai(10_051.0), rate).unwrap();
 
         assert_eq!(order.quantity.to_inner(), btc(1.03092783));
-        assert_eq!(dai::Amount::from(order.quote()), dai(9999.999951));
+        assert_eq!(
+            wbtc::Amount::try_from(order.quote()).unwrap(),
+            dai(9999.999951)
+        );
     }
 
     #[test]
@@ -509,15 +522,14 @@ mod test {
 
     proptest! {
         #[test]
-        fn new_buy_does_not_panic(dai_balance in "[0-9]+", max_buy_quantity in any::<u64>(), rate in any::<f64>(), spread in any::<u16>()) {
+        fn new_buy_does_not_panic(dai_balance in any::<u64>(), max_buy_quantity in any::<u64>(), rate in any::<f64>(), spread in any::<u16>()) {
 
             let max_buy_quantity = bitcoin::Amount::from_sat(max_buy_quantity);
-            let dai_balance = BigUint::from_str(&dai_balance);
             let rate = Rate::try_from(rate);
             let spread = Spread::new(spread);
 
-            if let (Ok(dai_balance), Ok(rate), Ok(spread)) = (dai_balance, rate, spread) {
-                let dai_balance = dai::Amount::from_atto(dai_balance);
+            if let (Ok(rate), Ok(spread)) = (rate, spread) {
+                let dai_balance = wbtc::Amount::from_sat(dai_balance);
 
                 let strategy = AllIn::new(StaticStub::static_stub(), None, Some(max_buy_quantity), spread, StaticStub::static_stub(),);
                 let _: anyhow::Result<BtcDaiOrderForm> = strategy.new_buy(dai_balance, rate);
@@ -527,16 +539,15 @@ mod test {
 
     proptest! {
         #[test]
-        fn new_buy_no_max_quantity_does_not_panic(dai_balance in "[0-9]+", rate in any::<f64>(), spread in any::<u16>()) {
+        fn new_buy_no_max_quantity_does_not_panic(dai_balance in any::<u64>(), rate in any::<f64>(), spread in any::<u16>()) {
 
-            let dai_balance = BigUint::from_str(&dai_balance);
             let rate = Rate::try_from(rate);
             let spread = Spread::new(spread);
 
-            if let (Ok(dai_balance), Ok(rate), Ok(spread)) = (dai_balance, rate, spread) {
+            if let (Ok(rate), Ok(spread)) = (rate, spread) {
                 let strategy = AllIn::new(StaticStub::static_stub(), None, None, spread, StaticStub::static_stub(),);
 
-                let dai_balance = dai::Amount::from_atto(dai_balance);
+                let dai_balance = wbtc::Amount::from_sat(dai_balance);
 
                 let _: anyhow::Result<BtcDaiOrderForm> = strategy.new_buy(dai_balance, rate);
             }

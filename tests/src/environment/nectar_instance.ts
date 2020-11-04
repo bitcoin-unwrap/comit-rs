@@ -163,20 +163,20 @@ export function parseDepositOutput(output: string): DepositAddresses {
 export interface Balances {
     bitcoin: bigint;
     ether: bigint;
-    dai: bigint;
+    wbtc: bigint;
 }
 
 export function parseBalanceOutput(output: string): Balances {
     const match = output.match(
-        /Bitcoin: ([0-9.]+) BTC\sDai: ([0-9.]+) DAI\sEther: ([0-9.]+) ETH/
+        /Bitcoin: ([0-9.]+) BTC\sWrapped-Bitcoin: ([0-9.]+) WBTC\sEther: ([0-9.]+) ETH/
     );
     if (!match) {
-        throw new Error("Failed to extract addresses from output");
+        throw new Error("Failed to extract balances from output");
     }
 
     return {
         bitcoin: BigInt(parseFixed(match[1], 8).toString()),
-        dai: BigInt(parseFixed(match[2], 18).toString()),
+        wbtc: BigInt(parseFixed(match[2], 8).toString()),
         ether: BigInt(parseFixed(match[3], 18)),
     };
 }

@@ -239,7 +239,7 @@ async function newNectarActor() {
     await bitcoinFaucet.mint(100_000_000n, depositAddresses.bitcoin);
     await ethereumFaucet.mintErc20(
         depositAddresses.ethereum,
-        1_000_000_000_000_000_000_000_000n,
+        100_000_000n,
         global.tokenContract
     );
     await ethereumFaucet.mintEther(

@@ -1,7 +1,7 @@
-pub mod dai;
 mod gas_price;
 mod geth;
 mod wallet;
+pub mod wbtc;
 
 pub use comit::ethereum::{Address, ChainId, Hash};
 pub use gas_price::*;
@@ -29,10 +29,10 @@ impl Chain {
     pub fn new(chain_id: ChainId, dai_contract_address: Address) -> Self {
         use Chain::*;
         match (chain_id.into(), dai_contract_address) {
-            (1, contract) if dai::is_mainnet_contract_address(contract) => Mainnet,
-            (3, contract) if dai::is_ropsten_contract_address(contract) => Ropsten,
-            (4, contract) if dai::is_rinkeby_contract_address(contract) => Rinkeby,
-            (42, contract) if dai::is_kovan_contract_address(contract) => Kovan,
+            (1, contract) if wbtc::is_mainnet_contract_address(contract) => Mainnet,
+            (3, contract) if wbtc::is_ropsten_contract_address(contract) => Ropsten,
+            (4, contract) if wbtc::is_rinkeby_contract_address(contract) => Rinkeby,
+            (42, contract) if wbtc::is_kovan_contract_address(contract) => Kovan,
             (chain_id, dai_contract_address) => Local {
                 chain_id,
                 dai_contract_address,
@@ -52,7 +52,7 @@ impl Chain {
     }
 
     pub fn dai_contract_address(&self) -> Address {
-        dai::token_contract_address(*self)
+        wbtc::token_contract_address(*self)
     }
 
     pub fn chain_id(&self) -> ChainId {

@@ -1,8 +1,8 @@
 use crate::{
     ethereum::{
-        self, dai, ether,
+        self, ether,
         geth::{Client, EstimateGasRequest},
-        to_clarity_address, Address, ChainId, Hash, DAI_TRANSFER_GAS_LIMIT,
+        to_clarity_address, wbtc, Address, ChainId, Hash, DAI_TRANSFER_GAS_LIMIT,
     },
     Seed,
 };
@@ -14,7 +14,7 @@ use comit::{
     swap::actions::{CallContract, DeployContract},
 };
 use conquer_once::Lazy;
-use num::BigUint;
+use num::{BigUint, ToPrimitive};
 use std::time::Duration;
 use url::Url;
 
@@ -203,7 +203,7 @@ impl Wallet {
     pub async fn transfer_dai(
         &self,
         to: Address,
-        value: dai::Amount,
+        value: wbtc::Amount,
         chain_id: ChainId,
         gas_price: ether::Amount,
     ) -> anyhow::Result<Hash> {
@@ -295,12 +295,14 @@ impl Wallet {
         Ok(hash)
     }
 
-    pub async fn dai_balance(&self) -> anyhow::Result<dai::Amount> {
+    pub async fn dai_balance(&self) -> anyhow::Result<wbtc::Amount> {
         let balance = self
             .erc20_balance(self.chain.dai_contract_address())
             .await?;
         let int = BigUint::from_bytes_le(&balance.quantity.to_bytes());
-        Ok(dai::Amount::from_atto(int))
+        Ok(wbtc::Amount::from_sat(int.to_u64().with_context(|| {
+            format!("{} does not fit into a u64", int)
+        })?))
     }
 
     pub async fn ether_balance(&self) -> anyhow::Result<ether::Amount> {
@@ -489,7 +491,7 @@ mod tests {
             .unwrap();
 
         let address = wallet.account();
-        let initial_deposit = 5_000_000_000_000_000_000u64;
+        let initial_deposit = 500_000_000u64;
         blockchain
             .mint_ether(
                 address,
@@ -512,7 +514,7 @@ mod tests {
             .unwrap();
 
         let balance = wallet.dai_balance().await.unwrap();
-        assert_eq!(balance, dai::Amount::from_atto(initial_deposit.into()));
+        assert_eq!(balance, wbtc::Amount::from_sat(initial_deposit));
 
         let gas_price = GasPrice::geth_url(blockchain.node_url.clone())
             .gas_price()
@@ -522,7 +524,7 @@ mod tests {
         let hash = wallet
             .transfer_dai(
                 Address::random(),
-                dai::Amount::from_dai_trunc(1.0).unwrap(),
+                wbtc::Amount::from_wbtc(1.0).unwrap(),
                 chain_id,
                 gas_price,
             )
@@ -532,10 +534,7 @@ mod tests {
         wallet.wait_until_confirmed(hash, chain_id).await.unwrap();
 
         let balance = wallet.dai_balance().await.unwrap();
-        assert_eq!(
-            balance,
-            dai::Amount::from_atto(4_000_000_000_000_000_000u64.into())
-        );
+        assert_eq!(balance, wbtc::Amount::from_sat(400_000_000));
     }
 
     #[tokio::test]

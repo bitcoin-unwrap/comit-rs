@@ -255,7 +255,7 @@ impl Settings {
 mod tests {
     use super::*;
     use crate::{
-        config::{file, Bitcoind, Geth, Tokens, DAI_MAINNET},
+        config::{file, Bitcoind, Geth, Tokens, WBTC_MAINNET},
         ethereum::ChainId,
     };
     use comit::ledger;
@@ -416,7 +416,7 @@ mod tests {
                 geth: Geth {
                     node_url: "http://localhost:8545".parse().unwrap(),
                 },
-                tokens: Tokens { dai: *DAI_MAINNET },
+                tokens: Tokens { dai: *WBTC_MAINNET },
             })
     }
 

@@ -4,7 +4,7 @@ use crate::{
     bitcoin,
     command::trade::event_loop::EventLoop,
     config::Settings,
-    ethereum::{self, dai},
+    ethereum::{self, wbtc},
     history::History,
     maker::strategy,
     network::{self, new_swarm},
@@ -18,7 +18,7 @@ use comit::{
 };
 use futures::{channel::mpsc, Future, SinkExt};
 use futures_timer::Delay;
-use std::{sync::Arc, time::Duration};
+use std::{convert::TryInto, sync::Arc, time::Duration};
 
 pub async fn trade(
     seed: &Seed,
@@ -199,7 +199,7 @@ fn init_dai_balance_updates(
     wallet: Arc<ethereum::Wallet>,
 ) -> (
     impl Future<Output = comit::Never> + Send,
-    mpsc::Receiver<anyhow::Result<dai::Amount>>,
+    mpsc::Receiver<anyhow::Result<wbtc::Amount>>,
 ) {
     let (mut sender, receiver) = make_update_channel();
 
@@ -232,7 +232,7 @@ fn respawn_swaps(
             SwapKind::HbitHerc20(SwapParams {
                 ref herc20_params, ..
             }) => {
-                let fund_amount = herc20_params.asset.clone().into();
+                let fund_amount = herc20_params.asset.clone().try_into()?;
                 maker.strategy.hbit_herc20_swap_resumed(fund_amount);
             }
             SwapKind::Herc20Hbit(SwapParams {

@@ -21,12 +21,7 @@ pub async fn withdraw(
         Withdraw::Dai { amount, to_address } => {
             let gas_price = ethereum_gas_price.gas_price().await?;
             let tx_id = ethereum_wallet
-                .transfer_dai(
-                    to_address,
-                    amount.clone(),
-                    ethereum_wallet.chain_id(),
-                    gas_price,
-                )
+                .transfer_dai(to_address, amount, ethereum_wallet.chain_id(), gas_price)
                 .await?;
             Ok(format!(
                 "{} transferred to {}\nTransaction id: {}",
@@ -57,7 +52,7 @@ pub async fn withdraw(
 mod tests {
     use super::*;
     use crate::{
-        ethereum::{dai, ether, ChainId},
+        ethereum::{ether, wbtc, ChainId},
         test_harness, Seed,
     };
     use comit::{
@@ -157,7 +152,7 @@ mod tests {
         println!("{}", stdout);
 
         let dai_withdraw = Withdraw::Dai {
-            amount: dai::Amount::from_dai_trunc(3.2).unwrap(),
+            amount: wbtc::Amount::from_wbtc(3.2).unwrap(),
             to_address: ethereum::Address::random(),
         };
         let stdout = withdraw(

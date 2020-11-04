@@ -38,8 +38,8 @@ impl Rate {
     }
 
     /// significand = rate * 10ePRECISION
-    pub fn significand(self) -> BigUint {
-        BigUint::from(self.0)
+    pub fn significand(self) -> u64 {
+        self.0
     }
 }
 
@@ -80,8 +80,8 @@ impl TryFrom<f64> for Rate {
 
 impl Into<Price<comit::asset::Bitcoin, comit::asset::Erc20Quantity>> for Rate {
     fn into(self) -> Price<comit::asset::Bitcoin, comit::asset::Erc20Quantity> {
-        let btc_to_dai = Erc20Quantity::from_wei(self.0);
-        Price::from_wei_per_sat(btc_to_dai)
+        let ten_nano_sats_per_sat = Erc20Quantity::from_wei(self.0);
+        Price::from_wei_per_sat(ten_nano_sats_per_sat)
     }
 }
 
