@@ -7,17 +7,17 @@
 [COMIT](https://comit.network) is an open protocol facilitating cross-blockchain applications.
 For example, with [COMIT](https://comit.network) you can exchange Bitcoin for Ether or any ERC20 token directly with another person.
 
-This repository contains the reference implementation of the protocol written in Rust.
-
 ![GitHub Action CI on dev](https://github.com/comit-network/comit-rs/workflows/CI/badge.svg?branch=dev)
 [![Safety Dance](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![Bors enabled](https://bors.tech/images/badge_small.svg)](https://app.bors.tech/repositories/20717)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Matrix chat](https://img.shields.io/badge/chat-on%20matrix-brightgreen?style=flat&logo=matrix)](https://app.element.io/#/room/#comit:matrix.org)
 
-# comit-rs
+# comit-rs - `Bitcoin.unwrap()` flavor
 
 The Rust reference implementation of the COMIT protocol (comit-rs) implements atomic swaps using constructs like Hash Time-Locked Contracts (HTLCs) to keep your funds safe at any time.
+
+This fork aims to provide out-of-the-box BTC<>wBTC(ERC20 on Ethereum) atomic swap software. 
 
 ## Structure
 
