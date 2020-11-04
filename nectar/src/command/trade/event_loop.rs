@@ -6,7 +6,7 @@ use crate::{
     maker::{PublishOrders, TakeRequestDecision},
     network::{self, ActivePeer, SetupSwapContext, Swarm},
     swap::{Database, SwapExecutor, SwapKind, SwapParams},
-    Maker, MidMarketRate, SwapId,
+    Maker, SwapId,
 };
 use anyhow::{bail, Context, Result};
 use comit::{
@@ -55,7 +55,6 @@ impl EventLoop {
     pub async fn run(
         mut self,
         mut finished_swap_receiver: Receiver<FinishedSwap>,
-        mut rate_update_receiver: Receiver<Result<MidMarketRate>>,
         mut btc_balance_update_receiver: Receiver<Result<bitcoin::Amount>>,
         mut dai_balance_update_receiver: Receiver<Result<dai::Amount>>,
     ) -> anyhow::Result<()> {
@@ -71,15 +70,6 @@ impl EventLoop {
                 event = self.swarm.next().fuse() => {
                     if let Err(err) = self.handle_network_event(event).await {
                         tracing::error!("Network event handling failed: {:#}", err);
-                    }
-                },
-                new_rate = rate_update_receiver.next().fuse() => {
-                    if let Some(Ok(new_rate)) = new_rate {
-                        if let Err(err) = self.handle_rate_update(new_rate) {
-                            tracing::error!("Rate update handling failed: {:#}", err);
-                        }
-                    } else if let Some(Err(err)) = new_rate {
-                        tracing::error!("Rate retrieval failed: {:#}", err);
                     }
                 },
                 new_btc_balance = btc_balance_update_receiver.next().fuse() => {
@@ -108,23 +98,6 @@ impl EventLoop {
                 }
             }
         }
-    }
-
-    fn handle_rate_update(&mut self, new_rate: MidMarketRate) -> Result<()> {
-        let publish_order = self.maker.update_rate(new_rate)?;
-        if let Some(PublishOrders {
-            new_sell_order,
-            new_buy_order,
-        }) = publish_order
-        {
-            let orderbook = &mut self.swarm.orderbook;
-
-            orderbook.clear_own_orders();
-            orderbook.publish(new_sell_order);
-            orderbook.publish(new_buy_order);
-        }
-
-        Ok(())
     }
 
     fn handle_btc_balance_update(&mut self, new_btc_balance: bitcoin::Amount) -> Result<()> {

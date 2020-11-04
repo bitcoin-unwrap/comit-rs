@@ -2,7 +2,7 @@ use crate::{
     bitcoin,
     ethereum::{self, dai},
     order::Symbol,
-    MidMarketRate,
+    Rate,
 };
 use comit::{ledger, order::SwapProtocol, BtcDaiOrder, Position, Role};
 
@@ -13,7 +13,8 @@ pub mod strategy;
 pub struct Maker {
     btc_balance: Option<bitcoin::Amount>,
     dai_balance: Option<dai::Amount>,
-    mid_market_rate: Option<MidMarketRate>,
+    // TODO: Replace with a Price.
+    fixed_rate: Rate,
     pub strategy: strategy::AllIn,
     bitcoin_network: ledger::Bitcoin,
     ethereum_chain: ethereum::Chain,
@@ -26,7 +27,7 @@ impl Maker {
     pub fn new(
         btc_balance: bitcoin::Amount,
         dai_balance: dai::Amount,
-        mid_market_rate: MidMarketRate,
+        fixed_rate: Rate,
         strategy: strategy::AllIn,
         bitcoin_network: ledger::Bitcoin,
         dai_chain: ethereum::Chain,
@@ -36,36 +37,13 @@ impl Maker {
         Maker {
             btc_balance: Some(btc_balance),
             dai_balance: Some(dai_balance),
-            mid_market_rate: Some(mid_market_rate),
+            fixed_rate,
             strategy,
             bitcoin_network,
             ethereum_chain: dai_chain,
             role,
             comit_network,
         }
-    }
-
-    pub fn update_rate(
-        &mut self,
-        mid_market_rate: MidMarketRate,
-    ) -> anyhow::Result<Option<PublishOrders>> {
-        match self.mid_market_rate {
-            Some(previous_mid_market_rate) if previous_mid_market_rate == mid_market_rate => {
-                Ok(None)
-            }
-            _ => {
-                self.mid_market_rate = Some(mid_market_rate);
-
-                Ok(Some(PublishOrders {
-                    new_sell_order: self.new_sell_order()?,
-                    new_buy_order: self.new_buy_order()?,
-                }))
-            }
-        }
-    }
-
-    pub fn invalidate_rate(&mut self) {
-        self.mid_market_rate = None;
     }
 
     pub fn update_bitcoin_balance(
@@ -119,31 +97,23 @@ impl Maker {
     }
 
     pub fn new_sell_order(&self) -> anyhow::Result<BtcDaiOrder> {
-        let mid_market_rate = self
-            .mid_market_rate
-            .ok_or_else(|| RateNotAvailable(Position::Sell))?;
         let btc_balance = self
             .btc_balance
             .ok_or_else(|| BalanceNotAvailable(Symbol::Btc))?;
 
-        let form = self
-            .strategy
-            .new_sell(btc_balance, mid_market_rate.into())?;
+        let form = self.strategy.new_sell(btc_balance, self.fixed_rate)?;
         let order = form.to_comit_order(self.swap_protocol(Position::Sell));
 
         Ok(order)
     }
 
     pub fn new_buy_order(&self) -> anyhow::Result<BtcDaiOrder> {
-        let mid_market_rate = self
-            .mid_market_rate
-            .ok_or_else(|| RateNotAvailable(Position::Buy))?;
         let dai_balance = self
             .dai_balance
             .clone()
             .ok_or_else(|| BalanceNotAvailable(Symbol::Dai))?;
 
-        let form = self.strategy.new_buy(dai_balance, mid_market_rate.into())?;
+        let form = self.strategy.new_buy(dai_balance, self.fixed_rate)?;
         let order = form.to_comit_order(self.swap_protocol(Position::Buy));
 
         Ok(order)
@@ -153,10 +123,6 @@ impl Maker {
         &mut self,
         order: BtcDaiOrder,
     ) -> anyhow::Result<TakeRequestDecision> {
-        let current_mid_market_rate = self
-            .mid_market_rate
-            .clone()
-            .ok_or_else(|| RateNotAvailable(order.position))?;
         let dai_balance = self
             .dai_balance
             .as_ref()
@@ -166,12 +132,8 @@ impl Maker {
             .as_ref()
             .ok_or_else(|| BalanceNotAvailable(Symbol::Btc))?;
 
-        self.strategy.process_taken_order(
-            order,
-            current_mid_market_rate.into(),
-            dai_balance,
-            btc_balance,
-        )
+        self.strategy
+            .process_taken_order(order, self.fixed_rate, dai_balance, btc_balance)
     }
 }
 
@@ -205,9 +167,9 @@ mod tests {
         ethereum::dai::{dai, some_dai},
         order::btc_dai_order,
         rate::rate,
-        MidMarketRate, Rate, Spread, StaticStub,
+        Rate, Spread, StaticStub,
     };
-    use std::convert::TryFrom;
+    use std::convert::TryInto;
 
     impl StaticStub for Maker {
         fn static_stub() -> Self {
@@ -215,7 +177,7 @@ mod tests {
                 btc_balance: Some(bitcoin::Amount::default()),
                 dai_balance: Some(dai::Amount::default()),
                 strategy: strategy::AllIn::static_stub(),
-                mid_market_rate: Some(MidMarketRate::static_stub()),
+                fixed_rate: Rate::static_stub(),
                 bitcoin_network: ledger::Bitcoin::Mainnet,
                 ethereum_chain: ethereum::Chain::static_stub(),
                 role: Role::Bob,
@@ -224,35 +186,10 @@ mod tests {
         }
     }
 
-    fn some_rate(rate: f64) -> Option<MidMarketRate> {
-        Some(MidMarketRate::new(Rate::try_from(rate).unwrap()))
-    }
-
-    #[test]
-    fn yield_error_if_rate_is_not_available() {
-        let mut maker = Maker {
-            mid_market_rate: None,
-            ..StaticStub::static_stub()
-        };
-
-        let taken_order = BtcDaiOrder {
-            ..StaticStub::static_stub()
-        };
-
-        let result = maker.process_taken_order(taken_order);
-        assert!(result.is_err());
-
-        let result = maker.new_buy_order();
-        assert!(result.is_err());
-
-        let result = maker.new_sell_order();
-        assert!(result.is_err());
-    }
-
     #[test]
     fn fail_to_confirm_sell_order_if_sell_rate_is_not_good_enough() {
         let mut maker = Maker {
-            mid_market_rate: some_rate(10000.0),
+            fixed_rate: 10000.0.try_into().unwrap(),
             ..StaticStub::static_stub()
         };
 
@@ -266,7 +203,7 @@ mod tests {
     #[test]
     fn fail_to_confirm_buy_order_if_buy_rate_is_not_good_enough() {
         let mut maker = Maker {
-            mid_market_rate: some_rate(10000.0),
+            fixed_rate: 10000.0.try_into().unwrap(),
             ..StaticStub::static_stub()
         };
 
@@ -275,37 +212,6 @@ mod tests {
         let result = maker.process_taken_order(taken_order).unwrap();
 
         assert_eq!(result, TakeRequestDecision::RateNotProfitable);
-    }
-
-    #[test]
-    fn no_rate_change_if_rate_update_with_same_value() {
-        let init_rate = some_rate(1.0);
-        let mut maker = Maker {
-            mid_market_rate: init_rate,
-            ..StaticStub::static_stub()
-        };
-
-        let new_mid_market_rate = MidMarketRate::new(Rate::try_from(1.0).unwrap());
-
-        let result = maker.update_rate(new_mid_market_rate).unwrap();
-        assert!(result.is_none());
-        assert_eq!(maker.mid_market_rate, init_rate)
-    }
-
-    #[test]
-    fn rate_updated_and_new_orders_if_rate_update_with_new_value() {
-        let mut maker = Maker {
-            btc_balance: some_btc(10.0),
-            dai_balance: some_dai(10.0),
-            mid_market_rate: some_rate(1.0),
-            ..StaticStub::static_stub()
-        };
-
-        let new_mid_market_rate = MidMarketRate::new(Rate::try_from(2.0).unwrap());
-
-        let result = maker.update_rate(new_mid_market_rate).unwrap();
-        assert!(result.is_some());
-        assert_eq!(maker.mid_market_rate, Some(new_mid_market_rate))
     }
 
     #[test]
@@ -335,7 +241,7 @@ mod tests {
         let mut maker = Maker {
             btc_balance: some_btc(1.0),
             dai_balance: some_dai(1.0),
-            mid_market_rate: some_rate(1.0),
+            fixed_rate: 1.0.try_into().unwrap(),
             ..StaticStub::static_stub()
         };
         let new_balance = btc(0.5);
@@ -353,7 +259,7 @@ mod tests {
         let mut maker = Maker {
             btc_balance: some_btc(1.0),
             dai_balance: some_dai(1.0),
-            mid_market_rate: some_rate(1.0),
+            fixed_rate: 1.0.try_into().unwrap(),
             ..StaticStub::static_stub()
         };
         let new_balance = dai(0.5);
@@ -378,7 +284,7 @@ mod tests {
 
         let mut maker = Maker {
             btc_balance: some_btc(3.0),
-            mid_market_rate: some_rate(1.0),
+            fixed_rate: 1.0.try_into().unwrap(),
             strategy,
             ..StaticStub::static_stub()
         };
@@ -403,7 +309,7 @@ mod tests {
 
         let mut maker = Maker {
             dai_balance: some_dai(3.0),
-            mid_market_rate: some_rate(1.0),
+            fixed_rate: 1.0.try_into().unwrap(),
             strategy,
             ..StaticStub::static_stub()
         };
@@ -428,7 +334,7 @@ mod tests {
 
         let maker = Maker {
             dai_balance: some_dai(20.0),
-            mid_market_rate: some_rate(9000.0),
+            fixed_rate: 9000.0.try_into().unwrap(),
             btc_balance: some_btc(1.0),
             strategy,
             ..StaticStub::static_stub()
@@ -451,7 +357,7 @@ mod tests {
 
         let maker = Maker {
             dai_balance: some_dai(20.0),
-            mid_market_rate: some_rate(10000.0),
+            fixed_rate: 10000.0.try_into().unwrap(),
             btc_balance: some_btc(1.0),
             strategy,
             ..StaticStub::static_stub()

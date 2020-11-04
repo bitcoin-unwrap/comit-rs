@@ -54,24 +54,24 @@ export default class NectarActor
             const expectedBalance =
                 this.startingBalances.bitcoin + expectedDiff.bitcoin;
 
-            expect(newBalances.bitcoin.toString()).toEqual(
-                expectedBalance.toString()
+            expect(newBalances.bitcoin.toString() + " BTC").toEqual(
+                expectedBalance.toString() + " BTC"
             );
         }
         if (expectedDiff.ether) {
             const expectedBalance =
                 this.startingBalances.ether + expectedDiff.ether;
 
-            expect(newBalances.ether.toString()).toEqual(
-                expectedBalance.toString()
+            expect(newBalances.ether.toString() + " ETH").toEqual(
+                expectedBalance.toString() + " ETH"
             );
         }
         if (expectedDiff.dai) {
             const expectedBalance =
                 this.startingBalances.dai + expectedDiff.dai;
 
-            expect(newBalances.dai.toString()).toEqual(
-                expectedBalance.toString()
+            expect(newBalances.dai.toString() + " DAI").toEqual(
+                expectedBalance.toString() + " DAI"
             );
         }
     }

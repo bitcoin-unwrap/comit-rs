@@ -19,7 +19,7 @@ export async function newNectarConfig(env: Environment): Promise<NectarConfig> {
             level: "trace",
         },
         ...makeLedgerConfig(env),
-        ...makeMakerConfig(env),
+        ...makeMakerConfig(),
     };
 }
 
@@ -39,29 +39,17 @@ function makeLedgerConfig(
     return ledgerConfig;
 }
 
-function makeMakerConfig(env: Environment): Pick<NectarConfig, "maker"> {
-    const maxBuyQuantity = 0.1;
-    const maxSellQuantity = 0.1;
+function makeMakerConfig(): Pick<NectarConfig, "maker"> {
+    const maxQuantity = 0.1;
 
-    if (env.treasury) {
-        return {
-            maker: {
-                btc_dai: {
-                    max_buy_quantity: maxBuyQuantity,
-                    max_sell_quantity: maxSellQuantity,
-                },
-                kraken_api_host: env.treasury.host,
+    return {
+        maker: {
+            btc_dai: {
+                max_sell_quantity: maxQuantity,
+                max_buy_quantity: maxQuantity,
             },
-        };
-    } else {
-        return {
-            maker: {
-                btc_dai: {
-                    max_sell_quantity: maxSellQuantity,
-                },
-            },
-        };
-    }
+        },
+    };
 }
 
 function makeBitcoinConfig(bitcoin: BitcoinNode): Bitcoin {
@@ -105,7 +93,6 @@ interface Maker {
         max_buy_quantity?: number;
         max_sell_quantity?: number;
     };
-    kraken_api_host?: string;
 }
 
 interface Network {

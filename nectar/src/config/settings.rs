@@ -202,30 +202,6 @@ pub struct Maker {
     /// Spread to apply to the mid-market rate, format is permyriad. E.g. 5.20
     /// is 5.2% spread
     pub spread: Spread,
-    pub kraken_api_host: KrakenApiHost,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct KrakenApiHost(Url);
-
-impl KrakenApiHost {
-    pub fn with_trading_pair(&self, trading_pair: &str) -> Result<Url> {
-        let url = self
-            .0
-            .join(&format!("/0/public/Ticker?pair={}", trading_pair))?;
-
-        Ok(url)
-    }
-}
-
-impl Default for KrakenApiHost {
-    fn default() -> Self {
-        let url = "https://api.kraken.com"
-            .parse()
-            .expect("static url always parses correctly");
-
-        Self(url)
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -365,9 +341,6 @@ impl Maker {
             spread: file
                 .spread
                 .unwrap_or_else(|| Spread::new(500).expect("500 is a valid spread value")),
-            kraken_api_host: file
-                .kraken_api_host
-                .map_or_else(KrakenApiHost::default, KrakenApiHost),
         }
     }
 }
@@ -377,7 +350,6 @@ impl Default for Maker {
         Self {
             btc_dai: BtcDai::default(),
             spread: Spread::new(500).expect("500 is a valid spread value"),
-            kraken_api_host: KrakenApiHost::default(),
         }
     }
 }
@@ -442,7 +414,6 @@ impl From<Maker> for file::Maker {
                 max_sell => Some(max_sell),
             },
             spread: Some(maker.spread),
-            kraken_api_host: Some(maker.kraken_api_host.0),
         }
     }
 }

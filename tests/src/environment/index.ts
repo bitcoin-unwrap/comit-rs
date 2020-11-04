@@ -32,14 +32,9 @@ export interface EthereumNode {
     chain_id: number;
 }
 
-export interface FakeTreasuryService {
-    host: string;
-}
-
 export interface Environment {
     bitcoin?: BitcoinNode;
     ethereum?: EthereumNode;
-    treasury?: FakeTreasuryService;
 }
 
 export interface Startable {

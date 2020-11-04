@@ -30,7 +30,6 @@ pub struct File {
 #[serde(deny_unknown_fields)]
 pub struct Maker {
     pub spread: Option<Spread>,
-    pub kraken_api_host: Option<Url>,
     pub btc_dai: Option<BtcDai>,
 }
 
@@ -213,7 +212,6 @@ mod tests {
 [maker]
 # 1000 is 10.00% spread
 spread = 1000
-kraken_api_host = "https://api.kraken.com"
 
 [maker.btc_dai]
 max_buy_quantity = 1.23456
@@ -257,7 +255,6 @@ url = "https://public_key@account.ingest.sentry.io/project_id"
                     max_sell_quantity: Some(bitcoin::Amount::from_btc(1.23456).unwrap()),
                 }),
                 spread: Some(Spread::new(1000).unwrap()),
-                kraken_api_host: Some("https://api.kraken.com".parse().unwrap()),
             }),
             network: Some(Network {
                 listen: vec!["/ip4/0.0.0.0/tcp/9939".parse().unwrap()],
@@ -322,7 +319,6 @@ url = "https://public_key@account.ingest.sentry.io/project_id"
                     max_sell_quantity: Some(bitcoin::Amount::from_btc(1.23456).unwrap()),
                 }),
                 spread: Some(Spread::new(1000).unwrap()),
-                kraken_api_host: Some("https://api.kraken.com".parse().unwrap()),
             }),
             network: Some(Network {
                 listen: vec!["/ip4/0.0.0.0/tcp/9939".parse().unwrap()],
@@ -369,7 +365,6 @@ url = "https://public_key@account.ingest.sentry.io/project_id"
 
         let expected = r#"[maker]
 spread = 1000
-kraken_api_host = "https://api.kraken.com/"
 
 [maker.btc_dai]
 max_buy_quantity = 1.23456

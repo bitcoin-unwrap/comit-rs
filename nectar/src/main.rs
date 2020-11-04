@@ -24,7 +24,6 @@ mod fs;
 mod history;
 mod jsonrpc;
 mod maker;
-mod mid_market_rate;
 mod network;
 mod order;
 mod rate;
@@ -49,7 +48,6 @@ use conquer_once::Lazy;
 
 pub use anyhow::Result;
 pub use maker::Maker;
-pub use mid_market_rate::MidMarketRate;
 pub use rate::{Rate, Spread};
 pub use seed::Seed;
 pub use swap_id::SwapId;

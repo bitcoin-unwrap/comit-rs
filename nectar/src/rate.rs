@@ -12,7 +12,11 @@ use std::{convert::TryFrom, fmt};
 /// rates (Bitcoin being in the range of 10k-100kDai) A rate has a maximum
 /// precision of 9 digits after the decimal rate = self.0 * 10e-9
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
-pub struct Rate(u64);
+pub struct Rate(
+    // TODO: use named field
+    // significand
+    u64,
+);
 
 impl fmt::Display for Rate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -28,14 +32,21 @@ impl fmt::Display for Rate {
 impl Rate {
     pub const PRECISION: u16 = 10;
 
-    /// integer = rate * 10ePRECISION
-    pub fn new(integer: u64) -> Self {
-        Rate(integer)
+    /// significand = rate * 10ePRECISION
+    pub fn new(significand: u64) -> Self {
+        Rate(significand)
     }
 
-    /// integer = rate * 10ePRECISION
-    pub fn integer(self) -> BigUint {
+    /// significand = rate * 10ePRECISION
+    pub fn significand(self) -> BigUint {
         BigUint::from(self.0)
+    }
+}
+
+impl Default for Rate {
+    /// Fixed rate of 1:1
+    fn default() -> Self {
+        Self(10u64.pow(Self::PRECISION as u32))
     }
 }
 
@@ -101,7 +112,7 @@ impl Spread {
             Position::Buy => ten_thousand.clone() - self.0,
         };
 
-        let integer = rate.integer() * (spread);
+        let integer = rate.significand() * (spread);
 
         // Now divide by 10e4 because of the spread
         let (rate, _remainder) = integer.div_rem(&ten_thousand);

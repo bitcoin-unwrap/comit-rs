@@ -3,14 +3,13 @@ mod event_loop;
 use crate::{
     bitcoin,
     command::trade::event_loop::EventLoop,
-    config::{KrakenApiHost, Settings},
+    config::Settings,
     ethereum::{self, dai},
     history::History,
     maker::strategy,
-    mid_market_rate::get_btc_dai_mid_market_rate,
     network::{self, new_swarm},
     swap::{Database, SwapExecutor, SwapKind, SwapParams},
-    Maker, MidMarketRate, Seed, Spread,
+    Maker, Rate, Seed, Spread,
 };
 use anyhow::Context;
 use comit::{
@@ -33,10 +32,13 @@ pub async fn trade(
 
     let bitcoind_client = bitcoin::Client::new(settings.bitcoin.bitcoind.node_url.clone());
 
+    let fixed_rate = Rate::default();
+
     let mut maker = init_maker(
         Arc::clone(&bitcoin_wallet),
         bitcoind_client.clone(),
         Arc::clone(&ethereum_wallet),
+        fixed_rate,
         settings.clone(),
         network,
     )
@@ -63,14 +65,11 @@ pub async fn trade(
 
     let update_interval = Duration::from_secs(15u64);
 
-    let (rate_future, rate_update_receiver) =
-        init_rate_updates(Duration::from_secs(5 * 60), settings.maker.kraken_api_host);
     let (btc_balance_future, btc_balance_update_receiver) =
         init_bitcoin_balance_updates(update_interval, Arc::clone(&bitcoin_wallet));
     let (dai_balance_future, dai_balance_update_receiver) =
         init_dai_balance_updates(update_interval, Arc::clone(&ethereum_wallet));
 
-    tokio::spawn(rate_future);
     tokio::spawn(btc_balance_future);
     tokio::spawn(dai_balance_future);
 
@@ -111,7 +110,6 @@ pub async fn trade(
     event_loop
         .run(
             swap_execution_finished_receiver,
-            rate_update_receiver,
             btc_balance_update_receiver,
             dai_balance_update_receiver,
         )
@@ -122,6 +120,7 @@ async fn init_maker(
     bitcoin_wallet: Arc<bitcoin::Wallet>,
     bitcoind_client: bitcoin::Client,
     ethereum_wallet: Arc<ethereum::Wallet>,
+    fixed_rate: Rate,
     settings: Settings,
     network: comit::Network,
 ) -> anyhow::Result<Maker> {
@@ -137,10 +136,6 @@ async fn init_maker(
 
     let btc_dai = settings.maker.btc_dai;
 
-    let initial_rate = get_btc_dai_mid_market_rate(&settings.maker.kraken_api_host)
-        .await
-        .context("Could not get rate")?;
-
     let spread: Spread = settings.maker.spread;
 
     let strategy = strategy::AllIn::new(
@@ -154,40 +149,13 @@ async fn init_maker(
     Ok(Maker::new(
         initial_btc_balance,
         initial_dai_balance,
-        initial_rate,
+        fixed_rate,
         strategy,
         settings.bitcoin.network,
         settings.ethereum.chain,
         Role::Bob,
         network,
     ))
-}
-
-fn init_rate_updates(
-    update_interval: Duration,
-    kraken_api_host: KrakenApiHost,
-) -> (
-    impl Future<Output = comit::Never> + Send,
-    mpsc::Receiver<anyhow::Result<MidMarketRate>>,
-) {
-    let (mut sender, receiver) = make_update_channel();
-
-    let future = async move {
-        loop {
-            let rate = get_btc_dai_mid_market_rate(&kraken_api_host).await;
-
-            let _ = sender.send(rate).await.map_err(|e| {
-                tracing::trace!(
-                    "Error when sending rate update from sender to receiver: {}",
-                    e
-                )
-            });
-
-            Delay::new(update_interval).await;
-        }
-    };
-
-    (future, receiver)
 }
 
 fn make_update_channel<T>() -> (mpsc::Sender<T>, mpsc::Receiver<T>) {
@@ -314,7 +282,6 @@ mod tests {
             maker: settings::Maker {
                 btc_dai: Default::default(),
                 spread: StaticStub::static_stub(),
-                kraken_api_host: Default::default(),
             },
             network: Network {
                 listen: vec!["/ip4/98.97.96.95/tcp/20500"
