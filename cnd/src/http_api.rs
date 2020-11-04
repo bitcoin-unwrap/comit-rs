@@ -136,7 +136,8 @@ impl Amount {
     fn dai(value: Erc20Quantity) -> Self {
         Amount::Dai {
             value,
-            decimals: 18,
+            // changed to WBTC
+            decimals: 8,
         }
     }
 }
@@ -506,7 +507,7 @@ mod tests {
         let properties = OrderProperties {
             id: OrderId::from(Uuid::from_u128(0)),
             position: Position::Sell,
-            price: Amount::dai(Erc20Quantity::from_wei_dec_str("9100000000000000000000").unwrap()),
+            price: Amount::dai(Erc20Quantity::from_wei_dec_str("910000000000").unwrap()),
             quantity: Amount::btc(Bitcoin::from_sat(10000000)),
             state: State {
                 open: Bitcoin::from_sat(3000000),
@@ -526,8 +527,8 @@ mod tests {
   "position": "sell",
   "price": {
     "currency": "DAI",
-    "value": "9100000000000000000000",
-    "decimals": 18
+    "value": "910000000000",
+    "decimals": 8
   },
   "quantity": {
     "currency": "BTC",
@@ -559,14 +560,13 @@ mod tests {
 
     #[test]
     fn dai_amount_serializes_properly() {
-        let amount =
-            Amount::dai(Erc20Quantity::from_wei_dec_str("9000000000000000000000").unwrap());
+        let amount = Amount::dai(Erc20Quantity::from_wei_dec_str("900000000000").unwrap());
 
         let string = serde_json::to_string(&amount).unwrap();
 
         assert_eq!(
             string,
-            r#"{"currency":"DAI","value":"9000000000000000000000","decimals":18}"#
+            r#"{"currency":"DAI","value":"900000000000","decimals":8}"#
         )
     }
 
@@ -610,7 +610,7 @@ mod tests {
 
     #[test]
     fn herc20_protocol_serializes_correctly() {
-        let protocol = Protocol::herc20_dai(Erc20Quantity::from_wei(1_000_000_000_000_000u64));
+        let protocol = Protocol::herc20_dai(Erc20Quantity::from_wei(100_000u64));
 
         let result = serde_json::to_string_pretty(&protocol).unwrap();
 
@@ -620,8 +620,8 @@ mod tests {
   "protocol": "herc20",
   "asset": {
     "currency": "DAI",
-    "value": "1000000000000000",
-    "decimals": 18
+    "value": "100000",
+    "decimals": 8
   }
 }"#
         )

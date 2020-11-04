@@ -342,7 +342,7 @@ mod tests {
 
         let new_buy_order = maker.new_buy_order().unwrap();
         assert_eq!(new_buy_order.quantity.to_inner(), btc(0.002));
-        assert_eq!(dai::Amount::from(new_buy_order.quote()), dai(18.0));
+        assert_eq!(dai::Amount::from(new_buy_order.quote()), dai(8.0));
     }
 
     #[test]

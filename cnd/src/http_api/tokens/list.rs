@@ -17,7 +17,8 @@ async fn handler(settings: Settings) -> Result<impl Reply> {
     let dai = Token {
         symbol: "DAI".to_owned(),
         address: settings.ethereum.tokens.dai,
-        decimals: 18,
+        // changed to WBTC
+        decimals: 8,
     };
 
     Ok(reply::json(&vec![dai]))

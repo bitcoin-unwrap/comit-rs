@@ -12,7 +12,7 @@ use conquer_once::Lazy;
 use num::{BigUint, Integer, ToPrimitive, Zero};
 use std::str::FromStr;
 
-pub const ATTOS_IN_DAI_EXP: u16 = 18;
+pub const ATTOS_IN_DAI_EXP: u16 = 8;
 
 /// As per https://etherscan.io/token/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599
 static MAINNET_WBTC_CONTRACT_ADDRESS: Lazy<Address> = Lazy::new(|| {
@@ -47,6 +47,7 @@ impl Amount {
         Self(BigUint::zero())
     }
 
+    // TODO: This can be simplified to `Rate::PRECISION as i32`
     // The rate input is for dai to bitcoin but we applied it to attodai so we need
     // to:
     // - divide to get dai (18)
@@ -186,7 +187,7 @@ impl std::fmt::Display for Amount {
         let str = self.as_atto().to_string();
         let dai = string_int_to_float(str, ATTOS_IN_DAI_EXP as usize);
 
-        write!(f, "{} DAI", dai)
+        write!(f, "{} WBTC", dai)
     }
 }
 
@@ -247,24 +248,18 @@ mod tests {
 
     #[test]
     fn given_float_dai_amount_less_precise_than_attodai_then_exact_value_is_stored() {
-        let some_dai = Amount::from_dai_trunc(1.555_555_555).unwrap();
-        let same_amount = Amount::from_atto(BigUint::from(1_555_555_555_000_000_000u64));
-
-        assert_eq!(some_dai, same_amount);
-    }
-
-    #[test]
-    fn given_float_dai_amount_more_precise_than_attodai_then_stored_value_is_truncated() {
-        let some_dai = Amount::from_dai_trunc(0.000_000_555_555_555_555_5).unwrap();
-        let same_amount = Amount::from_atto(BigUint::from(555_555_555_555u64));
+        let some_dai = Amount::from_dai_trunc(15.555_555_55).unwrap();
+        let same_amount = Amount::from_atto(BigUint::from(1_555_555_555u64));
 
         assert_eq!(some_dai, same_amount);
     }
 
     #[test]
     fn using_rate_returns_correct_result() {
-        let dai = Amount::from_dai_trunc(10_001.234).unwrap();
-        let rate = Rate::try_from(10_001.234).unwrap();
+        let dai = Amount::from_dai_trunc(1.0).unwrap();
+        println!("{}", dai);
+        let rate = Rate::try_from(1.0).unwrap();
+        println!("{}", rate);
 
         let res: bitcoin::Amount = dai.worth_in(rate).unwrap();
 
@@ -275,11 +270,11 @@ mod tests {
     #[test]
     fn worth_in_result_truncated_1() {
         let dai = Amount::from_dai_trunc(112.648125).unwrap();
-        let rate = Rate::try_from(9125.0).unwrap();
+        let rate = Rate::try_from(1.0).unwrap();
 
         let res: bitcoin::Amount = dai.worth_in(rate).unwrap();
 
-        let btc = bitcoin::Amount::from_btc(0.012_345).unwrap();
+        let btc = bitcoin::Amount::from_btc(112.648125).unwrap();
         assert_eq!(res, btc);
     }
 
@@ -346,28 +341,28 @@ mod tests {
     fn given_amount_is_one_atto_dai_as_dai_returns_one_atto_dai() {
         let dai = Amount::from_atto(1u64.into());
 
-        assert_eq!(dai.to_string(), "0.000000000000000001 DAI".to_string())
+        assert_eq!(dai.to_string(), "0.00000001 WBTC".to_string())
     }
 
     #[test]
     fn given_amount_is_one_tenth_of_a_dai_as_dai_returns_one_tenth_of_a_dai() {
         let dai = Amount::from_dai_trunc(0.1).unwrap();
 
-        assert_eq!(dai.to_string(), "0.1 DAI".to_string())
+        assert_eq!(dai.to_string(), "0.1 WBTC".to_string())
     }
 
     #[test]
     fn given_amount_is_one_dai_as_dai_returns_one_dai() {
         let dai = Amount::from_dai_trunc(1.0).unwrap();
 
-        assert_eq!(dai.to_string(), "1 DAI".to_string())
+        assert_eq!(dai.to_string(), "1 WBTC".to_string())
     }
 
     #[test]
     fn given_amount_is_ten_dai_as_dai_returns_ten_dai() {
         let dai = Amount::from_dai_trunc(10.0).unwrap();
 
-        assert_eq!(dai.to_string(), "10 DAI".to_string())
+        assert_eq!(dai.to_string(), "10 WBTC".to_string())
     }
 
     proptest! {

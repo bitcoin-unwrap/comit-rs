@@ -279,10 +279,10 @@ export class CndActor
         price: string
     ): Promise<string> {
         const sats = BigInt(parseFixed(quantity, 8).toString());
-        const weiPerBtc = BigInt(parseFixed(price, 18).toString());
+        const wrappedSatsPerBtc = BigInt(parseFixed(price, 8).toString());
 
         const satsPerBtc = 100000000n;
-        const weiPerSat = weiPerBtc / satsPerBtc;
+        const weiPerSat = wrappedSatsPerBtc / satsPerBtc;
         const dai = sats * weiPerSat;
 
         switch (position) {

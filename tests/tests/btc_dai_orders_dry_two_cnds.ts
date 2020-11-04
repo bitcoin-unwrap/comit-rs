@@ -9,12 +9,8 @@ import { Problem } from "../src/axios_rfc7807_middleware";
 test(
     "given_alice_makes_an_order_when_fully_matched_against_bobs_order_then_settling_says_quantity",
     startConnectedAliceAndBob(async ([alice, bob]) => {
-        const aliceHref = await alice.makeBtcDaiOrder(
-            Position.Buy,
-            "0.2",
-            "9000"
-        );
-        const bobHref = await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
+        const aliceHref = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "1");
+        const bobHref = await bob.makeBtcDaiOrder(Position.Sell, "0.2", "1");
 
         await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
 
@@ -23,7 +19,7 @@ test(
         ).resolves.toMatchObject({
             state: {
                 open: "0",
-                settling: "20000000",
+                settling: "0.2",
             },
         });
         await expect(
@@ -31,7 +27,7 @@ test(
         ).resolves.toMatchObject({
             state: {
                 open: "0",
-                settling: "20000000",
+                settling: "0.2",
             },
         });
     })
