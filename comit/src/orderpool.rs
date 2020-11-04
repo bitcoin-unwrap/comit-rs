@@ -318,13 +318,21 @@ fn match_orders(
     };
 
     if left.swap_protocol != right.swap_protocol {
-        tracing::trace!("orders with different swap protocols don't match");
+        tracing::trace!(
+            "orders with different swap protocols don't match: {:?} != {:?}",
+            left.swap_protocol,
+            right.swap_protocol
+        );
         return None;
     }
 
     // TODO: partial order matching
     if left.quantity != right.quantity {
-        tracing::trace!("orders with different quantities don't match");
+        tracing::trace!(
+            "orders with different quantities don't match: {} != {}",
+            left.quantity,
+            right.quantity
+        );
         return None;
     }
 
