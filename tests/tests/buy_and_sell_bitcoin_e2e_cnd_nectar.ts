@@ -1,7 +1,6 @@
 /**
  * @ledger bitcoin
  * @ledger ethereum
- * @fakeTreasuryService true
  */
 import { startConnectedCndAndNectar } from "../src/actor_test";
 import { MarketEntity, Position } from "../src/cnd_client/payload";
@@ -15,7 +14,7 @@ test(
             (market) => market.entities.length > 0
         );
 
-        await alice.makeBtcDaiOrder(Position.Buy, "0.1", "9450"); // This matches what nectar publishes.
+        await alice.makeBtcDaiOrder(Position.Buy, "0.1", "1.05"); // This matches what nectar publishes.
         await alice.waitForSwap();
 
         await alice.assertAndExecuteNextAction("deploy");
@@ -29,7 +28,7 @@ test(
         await alice.assertSwapInactive();
         await bob.assertBalancesChangedBy({
             bitcoin: -(10_000_000n + 7650n), // nectar pays order quantity + the funding fee
-            dai: 945_000_000_000_000_000_000n, // = 0.1 * 9450 * 10^18
+            dai: 105_000_000_000_000_000n, // = 0.1 * 9450 * 10^18
         });
     })
 );
@@ -43,7 +42,7 @@ test(
             (market) => market.entities.length > 0
         );
 
-        await alice.makeBtcDaiOrder(Position.Sell, "0.1", "8550"); // This matches what nectar publishes.
+        await alice.makeBtcDaiOrder(Position.Sell, "0.1", "0.95"); // This matches what nectar publishes.
         await alice.waitForSwap();
 
         await alice.assertAndExecuteNextAction("fund");
@@ -56,7 +55,7 @@ test(
         await alice.assertSwapInactive();
         await bob.assertBalancesChangedBy({
             bitcoin: 10000000n - 16200n, // nectar receives order quantity but pays the redeem fee
-            dai: -855_000_000_000_000_000_000n, // = 0.1 * 8550 * 10^18
+            dai: -95_000_000_000_000_000n, // = 0.1 * 0.95 * 10^18
         });
     })
 );

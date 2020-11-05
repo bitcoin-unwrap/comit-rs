@@ -5,7 +5,7 @@ use crate::{
     Network, Role,
 };
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, marker::PhantomData, str::FromStr};
+use std::{fmt, fmt::Display, marker::PhantomData, str::FromStr};
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
@@ -94,6 +94,15 @@ impl BtcDaiOrder {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Quantity<B> {
     inner: B,
+}
+
+impl<D> Display for Quantity<D>
+where
+    D: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.inner)
+    }
 }
 
 impl Quantity<Bitcoin> {

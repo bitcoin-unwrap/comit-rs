@@ -5,12 +5,8 @@
 # A custom location to the config file can be specified using `--config`.
 
 [maker]
-# The spread to apply to the mid-market when publish an offer. It's a pyrimiad format, 12.34 = 12.34% spread.
+# The spread to apply to the fixed rate when publishing an offer. It's a pyrimiad format, 1234 = 12.34% spread.
 spread = 500
-# The host to use when fetching the rate for BTC/DAI. If you want to use something other than Kraken, configure it here.
-# Be aware that nectar still expects the response format to match the one from Kraken,
-# hence you will likely have to write a proxy if you want to use something else here.
-kraken_api_host = "https://api.kraken.com"
 
 [maker.btc_dai]
 # The maximum quantity of bitcoin to buy in one order, optional field.

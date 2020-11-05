@@ -52,20 +52,6 @@ test(
 );
 
 test(
-    "given_a_settling_order_when_open_orders_are_listed_is_still_returned_but_cannot_be_cancelled",
-    startConnectedAliceAndBob(async ([alice, bob]) => {
-        await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
-        await bob.makeBtcDaiOrder(Position.Sell, "0.2", "9000");
-        await Promise.all([alice.waitForSwap(), bob.waitForSwap()]);
-
-        const orders = await alice.listOpenOrders();
-
-        expect(orders.entities).toHaveLength(1);
-        expect(orders.entities[0].actions).toHaveLength(0);
-    })
-);
-
-test(
     "given_a_settling_order_when_trying_to_cancel_then_fails",
     startConnectedAliceAndBob(async ([alice, bob]) => {
         const href = await alice.makeBtcDaiOrder(Position.Buy, "0.2", "9000");
