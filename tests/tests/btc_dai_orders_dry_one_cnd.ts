@@ -22,7 +22,7 @@ test(
             },
             price: {
                 currency: Currency.DAI,
-                value: "20000000",
+                value: "1000000000000000000",
                 decimals: 8,
             },
         });
@@ -46,7 +46,7 @@ test(
             },
             price: {
                 currency: Currency.DAI,
-                value: "20000000",
+                value: "1000000000000000000",
                 decimals: 8,
             },
             state: {
