@@ -74,7 +74,7 @@ test(
         await alice.assertSwapInactive();
         await bob.assertBalancesChangedBy({
             bitcoin: 10000000n - 16200n, // nectar receives order quantity but pays the redeem fee
-            wbtc: -95_000_000n, // = 0.1 * 0.95 * 10^8
+            wbtc: -9_500_000n, // = 0.1 * 0.95 * 10^8
         });
     })
 );
